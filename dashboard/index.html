@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UrbanFlow Command</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="./styles.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 22 L14 4 L24 22"></path><path d="M9 15 H19"></path></svg>
+      <span class="brand-name">UrbanFlow <b>AI</b></span>
+      <div class="ctrl-group">
+        <span class="chip" id="controllerChip"><span class="dot" id="controllerDot"></span><span id="controllerText">Connecting…</span></span>
+        <button type="button" class="icon-btn" id="cfgBtn" aria-label="AI controller settings" aria-expanded="false" aria-controls="cfgPanel" title="AI controller settings">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>
+        </button>
+        <button type="button" class="demo-btn" id="demoBtn" aria-expanded="false" aria-controls="demoPanel">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"></path></svg>
+          Demo
+        </button>
+        <div class="demo-status" id="demoStatus" hidden>
+          <span class="rec" aria-hidden="true"></span>
+          <span id="demoStatusText" aria-live="polite"></span>
+          <button type="button" class="ghost demo-small" id="demoPause" aria-pressed="false">Pause</button>
+          <button type="button" class="ghost demo-small" id="demoStop">Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cfg demo-panel" id="demoPanel" role="dialog" aria-labelledby="demoTitle" hidden>
+      <div class="cfg-head">
+        <div>
+          <h2 id="demoTitle">Cross-Town Emergency</h2>
+          <div class="demo-sub">Conventional Traffic vs. UrbanFlow AI</div>
+        </div>
+        <button type="button" class="ghost" id="demoClose" aria-label="Close demo panel">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+      </div>
+      <dl class="demo-facts">
+        <dt>Traffic density</dt><dd id="dfDensity"></dd>
+        <dt>Ambulances</dt><dd id="dfAmb"></dd>
+        <dt>Destination</dt><dd id="dfDest"></dd>
+        <dt>Route</dt><dd id="dfRoute"></dd>
+      </dl>
+      <div class="demo-runs">
+        <button type="button" class="demo-run" data-run="conventional">
+          <span class="dr-n">Run 1</span><span class="dr-name">Conventional traffic</span>
+          <span class="dr-detail">Fixed-time signals, no emergency pre-emption. Drivers still make way.</span>
+          <span class="dr-last" id="dlast-conventional"></span>
+        </button>
+        <button type="button" class="demo-run" data-run="urbanflow">
+          <span class="dr-n">Run 2</span><span class="dr-name">UrbanFlow AI (live Nemotron)</span>
+          <span class="dr-detail">Nemotron 3 Nano times the signals; Predictive Green Corridor clears the way.</span>
+          <span class="dr-last" id="dlast-urbanflow"></span>
+        </button>
+      </div>
+      <p class="cfg-note" id="demoModel"></p>
+      <div class="cfg-result" id="demoError" aria-live="polite"></div>
+      <details class="cfg-adv">
+        <summary>Who does what in Run 2</summary>
+        <ul class="demo-roles">
+          <li><b>Nemotron 3 Nano</b> (live, via Nebius Token Factory) recommends when ordinary signals switch. Feed: NEMOTRON.</li>
+          <li><b>Predictive Green Corridor</b> is deterministic code: it times emergency priority from the ambulance's ETA and the queues. Feed: CORRIDOR.</li>
+          <li><b>Safety controller</b> checks every model recommendation and adds yellow and all-red. Feed: SAFETY CHECK.</li>
+          <li><b>Local rules</b> take over if the model fails or is slow. Feed: FALLBACK; the results say for how long.</li>
+          <li>The route is fixed for the comparison; the route planner is not used.</li>
+        </ul>
+      </details>
+      <div class="cfg-actions">
+        <button type="button" class="ghost" id="demoCompare">Compare results</button>
+        <button type="button" class="ghost" id="demoExit">Exit demo</button>
+      </div>
+    </div>
+
+    <div class="cfg" id="cfgPanel" role="dialog" aria-labelledby="cfgTitle" hidden>
+      <div class="cfg-head">
+        <h2 id="cfgTitle">AI controller</h2>
+        <button type="button" class="ghost" id="cfgClose" aria-label="Close settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+      </div>
+      <div class="cfg-field">
+        <span class="cfg-label" id="cfgCtrlLabel">Signal decisions made by</span>
+        <div class="seg cfg-seg" role="group" aria-labelledby="cfgCtrlLabel">
+          <button type="button" class="seg-btn" data-ctrl="nemotron" aria-pressed="false">Nemotron</button>
+          <button type="button" class="seg-btn" data-ctrl="rules" aria-pressed="true">Local rules</button>
+        </div>
+      </div>
+      <div class="cfg-server" id="cfgServer"></div>
+      <div class="cfg-field">
+        <label class="cfg-label" for="cfgKey">Nebius Token Factory API key</label>
+        <div class="cfg-key">
+          <input id="cfgKey" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your key">
+          <button type="button" class="ghost" id="cfgShow" aria-pressed="false">Show</button>
+        </div>
+        <p class="cfg-note" id="cfgKeyNote">Goes only to the UrbanFlow server on this computer, which keeps it in memory and uses it to call Token Factory. It is never stored in the browser.</p>
+        <label class="cfg-check"><input type="checkbox" id="cfgSave"> Also save it to dashboard/.env on this computer</label>
+      </div>
+      <div class="cfg-field">
+        <label class="cfg-label" for="cfgSignal">Signal model <span class="muted">· called every few seconds</span></label>
+        <input id="cfgSignal" list="cfgModels" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="cfg-field">
+        <label class="cfg-label" for="cfgDispatch">Ambulance route model <span class="muted">· one call per dispatch</span></label>
+        <input id="cfgDispatch" list="cfgModels" autocomplete="off" spellcheck="false">
+        <datalist id="cfgModels"></datalist>
+      </div>
+      <details class="cfg-adv">
+        <summary>Advanced</summary>
+        <label class="cfg-label" for="cfgBase">API base URL</label>
+        <input id="cfgBase" type="url" autocomplete="off" spellcheck="false">
+      </details>
+      <div class="cfg-actions">
+        <button type="button" class="ghost" id="cfgTest">Test connection</button>
+        <button type="button" class="primary" id="cfgApply">Save</button>
+      </div>
+      <div class="cfg-result" id="cfgResult" aria-live="polite"></div>
+      <dl class="cfg-stats" id="cfgStats"></dl>
+    </div>
+    <div class="top-controls">
+      <span class="clock" id="simClock">SIM 00:00</span>
+      <div class="seg" role="group" aria-label="Simulation speed">
+        <button type="button" class="seg-btn" data-speed="1" aria-pressed="true">1×</button>
+        <button type="button" class="seg-btn" data-speed="2" aria-pressed="false">2×</button>
+        <button type="button" class="seg-btn" data-speed="4" aria-pressed="false">4×</button>
+      </div>
+      <div class="ai-toggle">
+        <span class="ai-label" id="aiLabel">Adaptive control</span>
+        <button type="button" id="aiToggle" class="switch" role="switch" aria-checked="true" aria-labelledby="aiLabel"><span class="knob"></span></button>
+        <span class="ai-state" id="aiState">ON</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="viewport" id="viewport">
+      <canvas id="scene" aria-label="3D city traffic simulation"></canvas>
+      <canvas id="overlay" aria-hidden="true"></canvas>
+      <div class="tags" id="tags"></div>
+      <div class="fade" id="fade" aria-hidden="true"></div>
+
+      <div class="hud hud-tl">
+        <div class="seg seg-cam" role="group" aria-label="Camera mode">
+          <button type="button" class="seg-btn" data-cam="chase" aria-pressed="false">Chase cam</button>
+          <button type="button" class="seg-btn" data-cam="god" aria-pressed="true">Omniscient view</button>
+          <button type="button" class="seg-btn" data-cam="intersection" aria-pressed="false">Intersection cams</button>
+        </div>
+        <div class="cam-tag" id="camTag" hidden></div>
+        <div class="cam-nav" id="camNav" hidden>
+          <button type="button" class="ghost" id="camPrev" aria-label="Previous intersection">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+          </button>
+          <button type="button" class="ghost auto" id="camAuto" aria-pressed="true">Follow ambulance</button>
+          <button type="button" class="ghost" id="camNext" aria-label="Next intersection">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+          </button>
+          <span class="cam-sep" aria-hidden="true"></span>
+          <button type="button" class="ghost" id="camRotL" aria-label="Turn the camera left around the intersection" title="Turn left (Q) · or drag the view">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path></svg>
+          </button>
+          <button type="button" class="ghost" id="camRotR" aria-label="Turn the camera right around the intersection" title="Turn right (E) · or drag the view">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 4v5h-5"></path></svg>
+          </button>
+          <button type="button" class="ghost auto" id="camXray" aria-pressed="true" title="Cut away buildings between the camera and the intersection">See-through</button>
+        </div>
+        <button type="button" class="ghost route-btn" id="routeBtn" aria-expanded="false" aria-controls="routeMenu" hidden>
+          <span id="routeBtnText">Intersections ahead</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+        </button>
+        <div class="route-menu" id="routeMenu" role="group" aria-labelledby="routeMenuTitle" hidden>
+          <div class="panel-title" id="routeMenuTitle">Intersections ahead</div>
+          <div class="rm-list" id="routeList"></div>
+          <p class="rm-note muted small">Click one to jump the camera there, looking the way the ambulance will arrive.</p>
+        </div>
+      </div>
+
+      <div class="hud hud-tc" id="banner" hidden>
+        <div class="banner-light" id="bannerLight">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 19V5"></path><path d="M6 11l6-6 6 6"></path></svg>
+        </div>
+        <div>
+          <div class="eyebrow" id="bannerWhere">NEXT SIGNAL</div>
+          <div class="banner-main" id="bannerMain">—</div>
+        </div>
+      </div>
+
+      <div class="hud hud-tr legend" id="legend">
+        <div><span class="sw sw-route"></span>Ambulance corridor</div>
+        <div><span class="sw sw-bar g"></span><span class="sw sw-bar r"></span>Stop line = signal for that lane</div>
+        <div class="muted">Drag to pan · right-drag to tilt · scroll to zoom</div>
+      </div>
+
+      <div class="hud hud-br iso-ctl" id="isoCtl" role="group" aria-label="Map view">
+        <button type="button" class="ghost" id="isoLeft" aria-label="Rotate city left" title="Rotate left (Q)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path></svg>
+        </button>
+        <button type="button" class="ghost" id="isoRight" aria-label="Rotate city right" title="Rotate right (E)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 4v5h-5"></path></svg>
+        </button>
+        <button type="button" class="ghost" id="isoOut" aria-label="Zoom out">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg>
+        </button>
+        <button type="button" class="ghost" id="isoIn" aria-label="Zoom in">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+        </button>
+        <button type="button" class="ghost callout-btn" id="calloutBtn" aria-expanded="false" aria-controls="calloutMenu" title="Choose which callouts to show">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="3"></rect><path d="M12 16v4"></path><circle cx="12" cy="21" r="0.6"></circle></svg>
+          Callouts
+        </button>
+        <button type="button" class="ghost" id="isoHome" aria-label="Recenter the city" title="Recenter">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path></svg>
+        </button>
+      </div>
+
+      <div class="demo-results" id="demoResults" role="dialog" aria-labelledby="drTitle" hidden>
+        <div class="dr-head">
+          <div>
+            <div class="eyebrow">Demo results · Cross-Town Emergency</div>
+            <h2 id="drTitle">Conventional Traffic vs. UrbanFlow AI</h2>
+          </div>
+          <button type="button" class="ghost" id="drClose" aria-label="Close results">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+          </button>
+        </div>
+        <p class="dr-headline" id="drHeadline"></p>
+        <table class="dr-table" id="drTable"></table>
+        <p class="muted small" id="drNote"></p>
+        <div class="dr-actions">
+          <button type="button" class="ghost" id="drClear">Clear results</button>
+          <button type="button" class="ghost" id="drRun1">Replay run 1</button>
+          <button type="button" class="primary" id="drRun2">Replay run 2</button>
+        </div>
+      </div>
+
+      <div class="hud callout-menu" id="calloutMenu" role="group" aria-label="Callouts on the map" hidden>
+        <div class="panel-title">Show on the map</div>
+        <label><input type="checkbox" data-callout="route" checked><span class="cm-dot go"></span>Ambulance route signals</label>
+        <label><input type="checkbox" data-callout="amb" checked><span class="cm-dot amb"></span>Ambulances</label>
+        <label><input type="checkbox" data-callout="hosp" checked><span class="cm-dot hosp"></span>Hospitals</label>
+        <label><input type="checkbox" data-callout="ai" checked><span class="cm-dot ai"></span>Nemotron signal decisions</label>
+        <label><input type="checkbox" data-callout="queue" checked><span class="cm-dot queue"></span>Congestion (5+ queued)</label>
+        <p class="muted small">Click a signal callout to open that intersection's camera.</p>
+      </div>
+
+      <div class="hud hud-tr approaches" id="approaches" hidden>
+        <div class="panel-title">Signal by approach</div>
+        <div id="approachRows"></div>
+      </div>
+
+      <div class="hud hud-bl eta" id="etaCard" hidden>
+        <div class="eta-top"><span class="eyebrow red" id="etaName">AMBULANCE</span><span class="mono muted" id="etaSpeed">0 km/h</span></div>
+        <div class="eta-mid"><span class="eta-time" id="etaTime">0:00</span><span class="muted" id="etaDest">ETA</span></div>
+        <div class="eta-bar" id="etaBar"></div>
+        <div class="muted small" id="etaNote"></div>
+      </div>
+
+      <div class="hud hud-bc hint" id="hint" hidden></div>
+    </section>
+
+    <aside class="side">
+      <button type="button" class="dispatch" id="dispatchBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+        Dispatch Ambulance
+      </button>
+      <p class="dispatch-note">Random start point, nearest hospital assigned.</p>
+
+      <section class="stats" aria-labelledby="statsTitle">
+        <div class="stats-head"><h2 id="statsTitle">City right now</h2><span class="mode-pill" id="kMode">Rules</span></div>
+        <div class="kpis">
+          <div class="kpi" data-spark="stopped">
+            <div class="kpi-label">Cars stopped</div>
+            <div class="kpi-row"><span class="kpi-val" id="kStopped">—</span><span class="kpi-unit" id="kStoppedOf"></span></div>
+            <svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div class="kpi-sub" id="kStoppedSub">at lights or in queues</div>
+          </div>
+          <div class="kpi" data-spark="wait">
+            <div class="kpi-label">Time stopped per trip</div>
+            <div class="kpi-row"><span class="kpi-val" id="kWait">—</span><span class="kpi-unit">s</span></div>
+            <svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div class="kpi-sub" id="kWaitSub">average, last 2 min</div>
+          </div>
+          <div class="kpi" data-spark="thru">
+            <div class="kpi-label">Trips completed</div>
+            <div class="kpi-row"><span class="kpi-val" id="kThru">—</span><span class="kpi-unit">/ min</span></div>
+            <svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div class="kpi-sub" id="kThruSub">cars reaching their destination</div>
+          </div>
+          <div class="kpi" data-spark="dec">
+            <div class="kpi-label">Signal decisions</div>
+            <div class="kpi-row"><span class="kpi-val" id="kDec">—</span><span class="kpi-unit" id="kDecUnit">/ min</span></div>
+            <svg class="spark" viewBox="0 0 100 26" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div class="kpi-sub" id="kDecSub">greens ended early or held</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="amb-cmp" aria-labelledby="ambTitle">
+        <div class="stats-head"><h2 id="ambTitle">Ambulance response</h2><span class="muted small">avg dispatch → hospital</span></div>
+        <p class="amb-headline" id="ambHeadline">Dispatch an ambulance to start measuring.</p>
+        <ul class="amb-rows" id="ambRows">
+          <li class="amb-row" data-mode="Nemotron"><span class="amb-name"><i class="sw"></i>Nemotron</span><span class="amb-track"><span class="amb-bar"></span></span><span class="amb-val">—</span><span class="amb-sub"></span></li>
+          <li class="amb-row" data-mode="Rules"><span class="amb-name"><i class="sw"></i>Local rules</span><span class="amb-track"><span class="amb-bar"></span></span><span class="amb-val">—</span><span class="amb-sub"></span></li>
+          <li class="amb-row" data-mode="Fixed"><span class="amb-name"><i class="sw"></i>Fixed timers</span><span class="amb-track"><span class="amb-bar"></span></span><span class="amb-val">—</span><span class="amb-sub"></span></li>
+        </ul>
+        <p class="amb-last muted small" id="ambLast"></p>
+      </section>
+
+      <section class="feed" aria-labelledby="feedTitle">
+        <div class="feed-head"><h2 id="feedTitle">AI decision feed</h2><span class="muted small">newest first</span></div>
+        <ol class="feed-list" id="feed" aria-live="polite"></ol>
+      </section>
+    </aside>
+  </main>
+</div>
+<div class="boot" id="boot">Loading the city…</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
