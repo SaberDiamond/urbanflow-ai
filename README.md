@@ -4,6 +4,8 @@
 
 **Nebius x NVIDIA Global AI Hackathon 2026 · Physical AI track**
 
+[Demo video (YouTube)](https://youtu.be/iV5KdKlHBT8) · [Devpost project](https://devpost.com/software/urbanflow-ai-15zhls) · [MIT License](LICENSE)
+
 UrbanFlow AI is a traffic-signal control system for a simulated city. NVIDIA Nemotron models, served by Nebius Token Factory, recommend ordinary signal changes and help plan ambulance routes. A deterministic **Predictive Green Corridor** predicts when an ambulance will reach each intersection on its route and turns those lights green early enough for waiting cars to clear before it arrives. A safety controller decides what actually reaches the signals, so a model reply can never create an unsafe light.
 
 Everything runs in a custom traffic simulation shown as an interactive 3D night-city dashboard. Results in this repository come from that simulation. They are not real-world measurements.
@@ -197,20 +199,36 @@ SUMO and TraCI were used in an earlier version of the project. They are not part
 ```bash
 git clone https://github.com/SaberDiamond/urbanflow-ai.git
 cd urbanflow-ai/dashboard
-python3 server.py              # live Nemotron (add your key in the dashboard)
+python3 server.py              # live Nemotron (add your key as below)
 # or
 python3 server.py --mock       # offline stand-in model, no key, no network calls
 ```
 
-Open <http://localhost:8000>. The server listens on 127.0.0.1 only; use `--port` to change the port.
+On Windows, use `python` instead of `python3`.
+
+Open <http://localhost:8000> in the browser. Always open it through the server; opening `index.html` as a file will not work. The server listens on 127.0.0.1 only; use `--port 8080` (for example) if port 8000 is taken. The terminal shows whether a key was found.
 
 ### Configure the Nebius API key
 
-1. Click the gear button next to the controller badge.
-2. Paste your Token Factory key and click **Test connection**.
-3. Choose **Nemotron** under "Signal decisions made by" and turn on **AI control**.
+You need a Nebius Token Factory API key. There are three ways to provide it.
 
-Or create `dashboard/.env` yourself. It is git-ignored, and the server refuses to serve it.
+**In the dashboard (simplest)**
+
+1. Click the gear button next to the controller badge in the top bar.
+2. Paste your key and click **Test connection**. A reply from Nemotron 3 Nano confirms it works.
+3. Choose **Nemotron** under "Signal decisions made by", then turn on **AI control**.
+
+The key is kept in the local server's memory only. Tick **Also save it to dashboard/.env** to keep it between restarts.
+
+**As an environment variable**
+
+```bash
+NEBIUS_API_KEY=<your key> python3 server.py
+```
+
+**In a file**
+
+Create `dashboard/.env` yourself. It is git-ignored, and the server refuses to serve it.
 
 ```
 NEBIUS_API_KEY=<your key>
@@ -293,17 +311,19 @@ Results stay in the browser until cleared. **Pause**, **Stop** and **Replay** ar
 | Run 2 · UrbanFlow AI with the **offline stand-in model** | 0:55–0:56 | Headless test, Oct 30, 2026, with the idle-green safeguard (0:55 before it on Oct 28). **Not a Nemotron measurement.** |
 | Run 2 · UrbanFlow AI with **live Nemotron** | 0:55 | Live run on the presenter's Mac, Oct 30, 2026 |
 
-**Live comparison (Oct 30, 2026).** Run 1 (conventional, fixed signals) against Run 2 (UrbanFlow AI with live Nemotron 3 Nano via Nebius Token Factory), same seed, demand, dispatch time and fixed route:
+**Live comparison (Oct 30, 2026), simulation results.** Run 1 (conventional, fixed signals) against Run 2 (UrbanFlow AI with live Nemotron 3 Nano via Nebius Token Factory). Both use the same seed, demand, dispatch time and fixed route. All values were measured inside the UrbanFlow AI traffic simulation, not on real roads:
 
 | Measure | Run 1 · Conventional | Run 2 · UrbanFlow AI (live Nemotron) |
 | --- | --- | --- |
-| Ambulance travel time | 1:17 | **0:55** (22 s faster) |
+| Ambulance travel time | 1:17 (77 s) | **0:55 (55 s)**, 22 s or about 28% faster |
 | Car trips completed per minute | **139** | 131 |
 | Nemotron calls | — | 16 of 16 answered, 0 failed |
 | Fallback to local rules | — | None |
 | Safety violations (conflicting greens, vehicle overlaps) | 0 | 0 |
 
-The ambulance arrived 22 s sooner, but city-wide throughput was lower in Run 2: holding greens for the ambulance and re-timing signals moved about 6% fewer car trips per minute in this run. One run per mode; the Run 2 result depends on live model replies, so it can vary between runs.
+The ambulance arrived 22 s sooner (77 s → 55 s), but city-wide throughput was lower in Run 2: holding greens for the ambulance and re-timing signals moved about 6% fewer car trips per minute in this run.
+
+There was one run per mode. Run 1 replays identically. Run 2 depends on live model replies, so it varies between runs: the later live run recorded for the demo video measured 77 s → 58 s (19 s faster), with 17 of 17 Nemotron calls answered and 0 safety violations. These are simulation results on a synthetic 8 × 6 grid, not real-world traffic measurements.
 
 ---
 
@@ -396,12 +416,12 @@ Earlier live Nemotron sessions on Oct 20 and Oct 24, 2026, on an earlier version
 | Item | Link |
 | --- | --- |
 | GitHub repository | <https://github.com/SaberDiamond/urbanflow-ai> |
-| Demonstration video (YouTube, under 3 minutes) | _Placeholder: YouTube link to be added when the video is published_ |
-| Devpost submission | _Placeholder: to be added when submitted_ |
+| Demonstration video (YouTube, under 3 minutes) | <https://youtu.be/iV5KdKlHBT8> |
+| Devpost submission | <https://devpost.com/software/urbanflow-ai-15zhls> |
 | Hackathon | Nebius x NVIDIA Global AI Hackathon 2026, Physical AI track |
 
 ---
 
 ## License
 
-_No license file yet. The hackathon asks for an open-source license (Apache 2.0, MIT or MPL 2.0); add a `LICENSE` file before submission._
+Released under the [MIT License](LICENSE). Copyright (c) 2026 Dhanushraj Manjunatha Rao.
